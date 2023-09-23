@@ -121,14 +121,31 @@ class EvaTC {
     // With typecheck: (var (x number) "foo") // error
 
     if (exp[0] === 'var') {
-      /* Implement here */
+      const [_tag, name, value] = exp;
+
+      // Infer actual type:
+      const valueType = this.tc(value, env);
+
+      // With type check:
+      if (Array.isArray(name)) {
+        const [varName, typeStr] = name;
+
+        const expectedType = Type.fromString(typeStr);
+
+        // Check the type:
+        this._expect(valueType, expectedType, value, exp);
+
+        return env.define(varName, expectedType);
+      }
+
+      return env.define(name, valueType);
     }
 
     // --------------------------------------------
     // Variable access: foo
 
     if (this._isVariableName(exp)) {
-      /* Implement here */
+      return env.lookup(exp);
     }
 
     // --------------------------------------------
@@ -341,17 +358,17 @@ class EvaTC {
     return new TypeEnvironment({
       VERSION: Type.string,
 
-      sum: Type.fromString('Fn<number<number,number>>'),
-      square: Type.fromString('Fn<number<number>>'),
+      // sum: Type.fromString('Fn<number<number,number>>'),
+      // square: Type.fromString('Fn<number<number>>'),
 
-      typeof: Type.fromString('Fn<string<any>>'),
+      // typeof: Type.fromString('Fn<string<any>>'),
     });
   }
 
   /**
    * Whether the expression is boolean binary.
    */
-  _isBooleanBinary(exp) {
+  _isBooleanBinary(exp, env) {
     /* Implement here */
   }
 
@@ -375,8 +392,8 @@ class EvaTC {
   _binary(exp, env) {
     this._checkArity(exp, 2);
 
-    const t1 = this.tc(exp[1]);
-    const t2 = this.tc(exp[2]);
+    const t1 = this.tc(exp[1], env);
+    const t2 = this.tc(exp[2], env);
 
     return this._expect(t2, t1, exp[2], exp);
   }

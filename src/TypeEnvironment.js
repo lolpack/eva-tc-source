@@ -20,7 +20,8 @@ class TypeEnvironment {
    * Creates a variable with the given name and a type.
    */
   define(name, type_) {
-    /* Implement here */
+    this.record[name] = type_;
+    return type_;
   }
 
   /**
@@ -28,7 +29,12 @@ class TypeEnvironment {
    * if the variable is not defined.
    */
   lookup(name) {
-    return this.resolve(name).record[name];
+    if (!this.record.hasOwnProperty(name)) {
+      throw new ReferenceError(`Vairable "${name} is not defined.`);
+    }
+    return this.record[name];
+    
+    //return this.resolve(name).record[name];
   }
 
   /**
@@ -36,7 +42,7 @@ class TypeEnvironment {
    * throws if a variable is not defined.
    */
   resolve(name) {
-    /* Implement here */
+
   }
 }
 

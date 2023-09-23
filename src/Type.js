@@ -39,7 +39,11 @@ class Type {
    * From string: 'number' -> Type.number
    */
   static fromString(typeStr) {
-    /* Implement here */
+    if (this.hasOwnProperty(typeStr)) {
+      return this[typeStr];
+    }
+
+    throw `Unknown type: ${typeStr}`;
   }
 }
 
