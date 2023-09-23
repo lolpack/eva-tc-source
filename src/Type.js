@@ -32,14 +32,18 @@ class Type {
    * Equals.
    */
   equals(other) {
-    /* Implement here */
+    return this.name === other.name;
   }
 
   /**
    * From string: 'number' -> Type.number
    */
   static fromString(typeStr) {
-    /* Implement here */
+    if (this.hasOwnProperty(typeStr)) {
+      return this[typeStr];
+    }
+
+    throw `Unknown type: ${typeStr}`;
   }
 }
 

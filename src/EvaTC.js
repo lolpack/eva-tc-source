@@ -63,7 +63,7 @@ class EvaTC {
     // Boolean: true | false
 
     if (this._isBoolean(exp)) {
-      /* Implement here */
+      return Type.boolean;
     }
 
     // --------------------------------------------
@@ -77,7 +77,7 @@ class EvaTC {
     // Boolean binary:
 
     if (this._isBooleanBinary(exp)) {
-      /* Implement here */
+      return this._booleanBinary(exp);
     }
 
     // --------------------------------------------
@@ -121,28 +121,54 @@ class EvaTC {
     // With typecheck: (var (x number) "foo") // error
 
     if (exp[0] === 'var') {
-      /* Implement here */
+      const [_tag, name, value] = exp;
+
+      // Infer actual type:
+      const valueType = this.tc(value, env);
+
+      // With type check:
+      if (Array.isArray(name)) {
+        const [varName, typeStr] = name;
+
+        const expectedType = Type.fromString(typeStr);
+
+        // Check the type:
+        this._expect(valueType, expectedType, value, exp);
+
+        return env.define(varName, expectedType);
+      }
+
+      return env.define(name, valueType);
     }
 
     // --------------------------------------------
     // Variable access: foo
 
     if (this._isVariableName(exp)) {
-      /* Implement here */
+      return env.lookup(exp);
     }
 
     // --------------------------------------------
     // Variable update: (set x 10)
 
     if (exp[0] === 'set') {
-      /* Implement here */
+      const [_, ref, value] = exp;
+
+      // The type of the new value should match to the
+      // previous type when the variable was defined
+
+      const valueType = this.tc(value, env);
+      const varType = this.tc(ref, env);
+
+      return this._expect(valueType, varType, value, exp);
     }
 
     // --------------------------------------------
     // Block: sequence of expressions
 
     if (exp[0] === 'begin') {
-      /* Implement here */
+      const blockEnv = new TypeEnvironment({}, env);
+      return this._tcBlock(exp, blockEnv);
     }
 
     // --------------------------------------------
@@ -157,14 +183,30 @@ class EvaTC {
     //
 
     if (exp[0] === 'if') {
-      /* Implement here */
+      const [_tag, condition, consequent, alternate] = exp;
+
+      // Boolean condition
+      const t1 = this.tc(condition, env);
+      this._expect(t1, Type.boolean, condition, exp);
+
+      const t2 = this.tc(consequent, env);
+      const t3 = this.tc(alternate, env);
+
+      //Same type for both branches
+      return this._expect(t3, t2, exp, exp);
     }
 
     // --------------------------------------------
     // while-expression:
 
     if (exp[0] === 'while') {
-      /* Implement here */
+      const [_tag, condition, body] = exp;
+
+      // Boolean condition
+      const t1 = this.tc(condition, env);
+      this._expect(t1, Type.boolean, condition, exp);
+
+      return this.tc(body, env);
     }
 
     // --------------------------------------------
@@ -341,10 +383,10 @@ class EvaTC {
     return new TypeEnvironment({
       VERSION: Type.string,
 
-      sum: Type.fromString('Fn<number<number,number>>'),
-      square: Type.fromString('Fn<number<number>>'),
+      // sum: Type.fromString('Fn<number<number,number>>'),
+      // square: Type.fromString('Fn<number<number>>'),
 
-      typeof: Type.fromString('Fn<string<any>>'),
+      // typeof: Type.fromString('Fn<string<any>>'),
     });
   }
 
@@ -352,14 +394,28 @@ class EvaTC {
    * Whether the expression is boolean binary.
    */
   _isBooleanBinary(exp) {
-    /* Implement here */
+    return (
+      exp[0] === '==' ||
+      exp[0] === '!=' ||
+      exp[0] === '>=' ||
+      exp[0] === '<=' ||
+      exp[0] === '>' ||
+      exp[0] === '<'
+    );
   }
 
   /**
    * Boolean binary operators.
    */
   _booleanBinary(exp, env) {
-    /* Implement here */
+    this._checkArity(exp, 2);
+
+    const t1 = this.tc(exp[1], env);
+    const t2 = this.tc(exp[2], env);
+
+    this._expect(t2, t1, exp[2], exp);
+
+    return Type.boolean;
   }
 
   /**
@@ -373,7 +429,12 @@ class EvaTC {
    * Binary operators.
    */
   _binary(exp, env) {
-    /* Implement here */
+    this._checkArity(exp, 2);
+
+    const t1 = this.tc(exp[1], env);
+    const t2 = this.tc(exp[2], env);
+
+    return this._expect(t2, t1, exp[2], exp);
   }
 
   /**
@@ -398,7 +459,9 @@ class EvaTC {
    * Throws if operator type doesn't expect the operand.
    */
   _expectOperatorType(type_, allowedTypes, exp) {
-    /* Implement here */
+    if (!allowedTypes.some(t => t.equals(type_))) {
+      throw `\nUnexpected type: ${type} in ${exp}, allowed: ${allowedTypes}`;
+    }
   }
 
   /**
