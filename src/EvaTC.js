@@ -63,7 +63,7 @@ class EvaTC {
     // Boolean: true | false
 
     if (this._isBoolean(exp)) {
-      /* Implement here */
+      return Type.boolean;
     }
 
     // --------------------------------------------

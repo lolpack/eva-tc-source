@@ -32,7 +32,7 @@ class Type {
    * Equals.
    */
   equals(other) {
-    /* Implement here */
+    return this.name === other.name;
   }
 
   /**
