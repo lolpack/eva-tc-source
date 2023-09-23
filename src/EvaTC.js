@@ -152,14 +152,23 @@ class EvaTC {
     // Variable update: (set x 10)
 
     if (exp[0] === 'set') {
-      /* Implement here */
+      const [_, ref, value] = exp;
+
+      // The type of the new value should match to the
+      // previous type when the variable was defined
+
+      const valueType = this.tc(value, env);
+      const varType = this.tc(ref, env);
+
+      return this._expect(valueType, varType, value, exp);
     }
 
     // --------------------------------------------
     // Block: sequence of expressions
 
     if (exp[0] === 'begin') {
-      /* Implement here */
+      const blockEnv = new TypeEnvironment({}, env);
+      return this._tcBlock(exp, blockEnv);
     }
 
     // --------------------------------------------
