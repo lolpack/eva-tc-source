@@ -373,7 +373,12 @@ class EvaTC {
    * Binary operators.
    */
   _binary(exp, env) {
-    /* Implement here */
+    this._checkArity(exp, 2);
+
+    const t1 = this.tc(exp[1]);
+    const t2 = this.tc(exp[2]);
+
+    return this._expect(t2, t1, exp[2], exp);
   }
 
   /**
@@ -398,7 +403,9 @@ class EvaTC {
    * Throws if operator type doesn't expect the operand.
    */
   _expectOperatorType(type_, allowedTypes, exp) {
-    /* Implement here */
+    if (!allowedTypes.some(t => t.equals(type_))) {
+      throw `\nUnexpected type: ${type} in ${exp}, allowed: ${allowedTypes}`;
+    }
   }
 
   /**
