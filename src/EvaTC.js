@@ -77,7 +77,7 @@ class EvaTC {
     // Boolean binary:
 
     if (this._isBooleanBinary(exp)) {
-      /* Implement here */
+      return this._booleanBinary(exp);
     }
 
     // --------------------------------------------
@@ -183,14 +183,30 @@ class EvaTC {
     //
 
     if (exp[0] === 'if') {
-      /* Implement here */
+      const [_tag, condition, consequent, alternate] = exp;
+
+      // Boolean condition
+      const t1 = this.tc(condition, env);
+      this._expect(t1, Type.boolean, condition, exp);
+
+      const t2 = this.tc(consequent, env);
+      const t3 = this.tc(alternate, env);
+
+      //Same type for both branches
+      return this._expect(t3, t2, exp, exp);
     }
 
     // --------------------------------------------
     // while-expression:
 
     if (exp[0] === 'while') {
-      /* Implement here */
+      const [_tag, condition, body] = exp;
+
+      // Boolean condition
+      const t1 = this.tc(condition, env);
+      this._expect(t1, Type.boolean, condition, exp);
+
+      return this.tc(body, env);
     }
 
     // --------------------------------------------
@@ -377,15 +393,29 @@ class EvaTC {
   /**
    * Whether the expression is boolean binary.
    */
-  _isBooleanBinary(exp, env) {
-    /* Implement here */
+  _isBooleanBinary(exp) {
+    return (
+      exp[0] === '==' ||
+      exp[0] === '!=' ||
+      exp[0] === '>=' ||
+      exp[0] === '<=' ||
+      exp[0] === '>' ||
+      exp[0] === '<'
+    );
   }
 
   /**
    * Boolean binary operators.
    */
   _booleanBinary(exp, env) {
-    /* Implement here */
+    this._checkArity(exp, 2);
+
+    const t1 = this.tc(exp[1], env);
+    const t2 = this.tc(exp[2], env);
+
+    this._expect(t2, t1, exp[2], exp);
+
+    return Type.boolean;
   }
 
   /**
