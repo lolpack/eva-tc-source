@@ -13,7 +13,7 @@ const tests = [
   require('./block-test.js'),
   require('./if-test.js'),
   require('./while-test.js'),
-  // require('./user-defined-function-test.js'),
+  require('./user-defined-function-test.js'),
   // require('./built-in-function-test.js'),
   // require('./lambda-function-test.js'),
   // require('./alias-test.js'),

@@ -215,7 +215,24 @@ class EvaTC {
     // Syntactic sugar for: (var square (lambda ((x number)) -> number (* x x)))
 
     if (exp[0] === 'def') {
-      /* Implement here */
+      const [_tag, name, params, _retDel, returnTypeStr, body] = exp;
+      return env.define(
+        name,
+        this._tcFunction(params, returnTypeStr, body, env)
+        );
+    }
+      // ------------------------------------------
+      // Function calls
+      // (square 2)
+
+    if (Array.isArray(exp)) {
+      const fn = this.tc(exp[0], env);
+      const argValues = exp.slice(1);
+
+      // Passed arguments
+      const argTypes = argValues.map(arg => this.tc(arg, env));
+
+      return this._checkFunctionCall(fn, argTypes, env, exp);
     }
 
     // --------------------------------------------
@@ -344,14 +361,52 @@ class EvaTC {
    * Checks function call.
    */
   _checkFunctionCall(fn, argTypes, env, exp) {
-    /* Implement here */
+    // Check arity
+    if (fn.paramTypes.length !== argTypes.length) {
+      throw `\nFunction ${exp[0]} ${fn.getName()} expects ${
+        fn.paramTypes.length
+      } arguments, ${argTypes.length} given in ${exp}.\n`
+    }
+
+    // Check if argument types match the parameter types:
+    argTypes.forEach((argType, index) => {
+      this._expect(argType, fn.paramTypes[index], argTypes[index], exp);
+    });
+
+    return fn.returnType;
   }
 
   /**
    * Checks function body.
    */
   _tcFunction(params, returnTypeStr, body, env) {
-    /* Implement here */
+    const returnType = Type.Function.fromString(returnTypeStr);
+
+    // Parameters environment and types:
+    const paramsRecord = {};
+    const paramTypes = [];
+
+    params.forEach(([name, typeStr]) => {
+      const paramType = Type.fromString(typeStr);
+      paramsRecord[name] = paramType;
+      paramTypes.push(paramType);
+    });
+    const fnEnv = new TypeEnvironment(paramsRecord, env);
+
+    // Check the body in the extended environment:
+    const actualReturnType = this._tcBody(body, fnEnv);
+
+    // Check return type:
+    if (!returnType.equals(actualReturnType)) {
+      throw `Expected function ${body} to return ${returnType}, but got ${actualReturnType}.`
+    }
+
+    // Function type records its parameters and return type,
+    // so we can use them to validate function calls:
+    return new Type.Function({
+      paramTypes,
+      returnType
+    });
   }
 
   /**
