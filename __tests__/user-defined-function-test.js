@@ -34,42 +34,42 @@ module.exports = eva => {
   `,
   Type.number);
 
-  // // Closure:
+  // Closure:
 
-  // test(eva,
-  // `
-  //   (var value 100)
+  test(eva,
+  `
+    (var value 100)
 
-  //   (def calc ((x number) (y number)) -> Fn<number<number>>
-  //     (begin
-  //       (var z (+ x y))
+    (def calc ((x number) (y number)) -> Fn<number<number>>
+      (begin
+        (var z (+ x y))
 
-  //       (def inner ((foo number)) -> number
-  //         (+ (+ foo z) value))
+        (def inner ((foo number)) -> number
+          (+ (+ foo z) value))
 
-  //       inner
+        inner
 
-  //     ))
+      ))
 
-  //   (var fn (calc 10 20))
+    (var fn (calc 10 20))
 
-  //   (fn 30)
+    (fn 30)
 
-  // `,
-  // Type.number);
+  `,
+  Type.number);
 
 
-  // // Recursive function:
+  // Recursive function:
 
-  // test(eva,
-  // `
-  //   (def factorial ((x number)) -> number
-  //     (if (== x 1)
-  //       1
-  //       (* x (factorial (- x 1)))))
+  test(eva,
+  `
+    (def factorial ((x number)) -> number
+      (if (== x 1)
+        1
+        (* x (factorial (- x 1)))))
 
-  //   (factorial 5)
+    (factorial 5)
 
-  // `,
-  // Type.number);
+  `,
+  Type.number);
 };

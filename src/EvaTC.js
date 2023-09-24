@@ -216,10 +216,24 @@ class EvaTC {
 
     if (exp[0] === 'def') {
       const [_tag, name, params, _retDel, returnTypeStr, body] = exp;
-      return env.define(
+
+      // Extend environment with function name before evaluating body
+      // to support recursive function
+
+      const paramTypes = params.map(([name, typeStr]) => 
+        Type.fromString(typeStr)
+      );
+
+      env.define(
         name,
-        this._tcFunction(params, returnTypeStr, body, env)
-        );
+        new Type.Function({
+          paramTypes,
+          returnType: Type.fromString(returnTypeStr)
+        }),
+      );
+
+      // Validate body
+      return this._tcFunction(params, returnTypeStr, body, env);
     }
       // ------------------------------------------
       // Function calls
@@ -438,10 +452,9 @@ class EvaTC {
     return new TypeEnvironment({
       VERSION: Type.string,
 
-      // sum: Type.fromString('Fn<number<number,number>>'),
-      // square: Type.fromString('Fn<number<number>>'),
-
-      // typeof: Type.fromString('Fn<string<any>>'),
+      sum: Type.Function.fromString('Fn<number<number,number>>'),
+      square: Type.Function.fromString('Fn<number<number>>'),
+      typeof: Type.Function.fromString('Fn<string<any>>'),
     });
   }
 
