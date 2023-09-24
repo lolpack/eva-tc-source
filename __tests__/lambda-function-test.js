@@ -16,7 +16,7 @@ module.exports = eva => {
     (lambda ((x number)) -> number (* x x))
 
   `,
-  Type.fromString('Fn<number<number>>'));
+  Type.Function.fromString('Fn<number<number>>'));
 
   // Pass lambda as a callback
 

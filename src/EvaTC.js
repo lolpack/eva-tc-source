@@ -235,9 +235,20 @@ class EvaTC {
       // Validate body
       return this._tcFunction(params, returnTypeStr, body, env);
     }
-      // ------------------------------------------
-      // Function calls
-      // (square 2)
+
+    // MUST COME BEFORE FUNCTION CALL BELOW: TODO figure out more
+    // Elegant solution
+    // --------------------------------------------
+    // Lambda function: (lambda ((x number)) -> number (* x x))
+
+    if (exp[0] === 'lambda') {
+      const [_tag, params, _retDel, returnTypeStr, body] = exp;
+      return this._tcFunction(params, returnTypeStr, body, env);
+    }
+
+    // ------------------------------------------
+    // Function calls
+    // (square 2)
 
     if (Array.isArray(exp)) {
       const fn = this.tc(exp[0], env);
@@ -247,22 +258,6 @@ class EvaTC {
       const argTypes = argValues.map(arg => this.tc(arg, env));
 
       return this._checkFunctionCall(fn, argTypes, env, exp);
-    }
-
-    // --------------------------------------------
-    // Lambda function: (lambda ((x number)) -> number (* x x))
-
-    if (exp[0] === 'lambda') {
-      /* Implement here */
-    }
-
-    // --------------------------------------------
-    // Function calls.
-    //
-    // (square 2)
-
-    if (Array.isArray(exp)) {
-      /* Implement here */
     }
 
     throw `Unknown type for expression ${exp}.`;
