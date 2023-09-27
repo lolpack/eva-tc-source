@@ -77,42 +77,97 @@ class EvaTC {
     // Boolean binary:
 
     if (this._isBooleanBinary(exp)) {
-      return this._booleanBinary(exp);
+      return this._booleanBinary(exp, env);
     }
 
     // --------------------------------------------
     // Type declaration/alias: (type <name> <base>)
 
     if (exp[0] === 'type') {
-      /* Implement here */
+      const [_tag, name, base] = exp;
+
+      // Type alias
+      if (Type.hasOwnProperty(name)) {
+        throw `Type ${name} is already defined ${Type[name]}`;
+      }
+
+      if (!Type.hasOwnProperty(base)) {
+        throw `Type ${base} is not defined.`
+      }
+
+      return (Type[name] = new Type.Alias({
+        name,
+        parent: Type[base],
+      }));
     }
 
     // --------------------------------------------
     // Class declaration: (class <Name> <Super> <Body>)
 
     if (exp[0] === 'class') {
-      /* Implement here */
+      const [_tag, name, superClassName, body] = exp;
+
+      // Resolve super class
+      const superClass = Type[superClassName];
+
+      // New class (type)
+      const classType = new Type.Class({name, superClass});
+
+      // Class is accessible by name;
+      Type[name] = env.define(name, classType);
+
+      // Body is evaluated in the class environment.
+      this._tcBody(body, classType.env);
+
+      return classType;
     }
 
     // --------------------------------------------
     // Class instantiation: (new <Class> <Arguments>...)
 
     if (exp[0] === 'new') {
-      /* Implement here */
+      const [_tag, className, ...argValues] = exp;
+
+      const classType = Type[className];
+
+      if (classType == null) {
+        throw `Unknown class ${name}.`;
+      }
+
+      const argTypes = argValues.map(arg => this.tc(arg, env));
+
+      return this._checkFunctionCall(
+        classType.getField('constructor'),
+        [classType, ...argTypes],
+        env,
+        exp
+      );
     }
 
     // --------------------------------------------
     // Super expressions: (super <ClassName>)
 
     if (exp[0] === 'super') {
-      /* Implement here */
+      const [_tag, className] = exp;
+
+      const classType = Type[className];
+
+      if (classType == null) {
+        throw `Unknown class ${name}.`;
+      }
+
+      return classType.superClass;
     }
 
     // --------------------------------------------
     // Property access: (prop <instance> <name>)
 
     if (exp[0] === 'prop') {
-      /* Implement here */
+      const [_tag, instance, name] = exp;
+
+      const instanceType = this.tc(instance, env);
+
+      return instanceType.getField(name);
     }
 
     // --------------------------------------------
@@ -153,6 +208,17 @@ class EvaTC {
 
     if (exp[0] === 'set') {
       const [_, ref, value] = exp;
+
+      // 1. Assignment to a property: (set (prop <instance> <propName>) <value>)
+      if (ref[0] === 'prop') {
+        const [_tag, instance, propName] = ref;
+        const instanceType = this.tc(instance, env);
+
+        const valueType = this.tc(value, env);
+        const propType = instanceType.getField(propName);
+
+        return this._expect(valueType, propType, value, exp);
+      }
 
       // The type of the new value should match to the
       // previous type when the variable was defined
@@ -215,23 +281,48 @@ class EvaTC {
     // Syntactic sugar for: (var square (lambda ((x number)) -> number (* x x)))
 
     if (exp[0] === 'def') {
-      /* Implement here */
+      const [_tag, name, params, _retDel, returnTypeStr, body] = exp;
+
+      // Extend environment with function name before evaluating body
+      // to support recursive function
+      const paramTypes = params.map(([name, typeStr]) => 
+        Type.fromString(typeStr)
+      );
+
+      env.define(
+        name,
+        new Type.Function({
+          paramTypes,
+          returnType: Type.fromString(returnTypeStr)
+        }),
+      );
+
+      // Validate body
+      return this._tcFunction(params, returnTypeStr, body, env);
     }
 
+    // MUST COME BEFORE FUNCTION CALL BELOW: TODO figure out more
+    // Elegant solution
     // --------------------------------------------
     // Lambda function: (lambda ((x number)) -> number (* x x))
 
     if (exp[0] === 'lambda') {
-      /* Implement here */
+      const [_tag, params, _retDel, returnTypeStr, body] = exp;
+      return this._tcFunction(params, returnTypeStr, body, env);
     }
 
-    // --------------------------------------------
-    // Function calls.
-    //
+    // ------------------------------------------
+    // Function calls
     // (square 2)
 
     if (Array.isArray(exp)) {
-      /* Implement here */
+      const fn = this.tc(exp[0], env);
+      const argValues = exp.slice(1);
+
+      // Passed arguments
+      const argTypes = argValues.map(arg => this.tc(arg, env));
+
+      return this._checkFunctionCall(fn, argTypes, env, exp);
     }
 
     throw `Unknown type for expression ${exp}.`;
@@ -344,14 +435,52 @@ class EvaTC {
    * Checks function call.
    */
   _checkFunctionCall(fn, argTypes, env, exp) {
-    /* Implement here */
+    // Check arity
+    if (fn.paramTypes.length !== argTypes.length) {
+      throw `\nFunction ${exp[0]} ${fn.getName()} expects ${
+        fn.paramTypes.length
+      } arguments, ${argTypes.length} given in ${exp}.\n`
+    }
+
+    // Check if argument types match the parameter types:
+    argTypes.forEach((argType, index) => {
+      this._expect(argType, fn.paramTypes[index], argTypes[index], exp);
+    });
+
+    return fn.returnType;
   }
 
   /**
    * Checks function body.
    */
   _tcFunction(params, returnTypeStr, body, env) {
-    /* Implement here */
+    const returnType = Type.fromString(returnTypeStr);
+
+    // Parameters environment and types:
+    const paramsRecord = {};
+    const paramTypes = [];
+
+    params.forEach(([name, typeStr]) => {
+      const paramType = Type.fromString(typeStr);
+      paramsRecord[name] = paramType;
+      paramTypes.push(paramType);
+    });
+    const fnEnv = new TypeEnvironment(paramsRecord, env);
+
+    // Check the body in the extended environment:
+    const actualReturnType = this._tcBody(body, fnEnv);
+
+    // Check return type:
+    if (!returnType.equals(actualReturnType)) {
+      throw `Expected function ${body} to return ${returnType}, but got ${actualReturnType}.`
+    }
+
+    // Function type records its parameters and return type,
+    // so we can use them to validate function calls:
+    return new Type.Function({
+      paramTypes,
+      returnType
+    });
   }
 
   /**
@@ -383,10 +512,9 @@ class EvaTC {
     return new TypeEnvironment({
       VERSION: Type.string,
 
-      // sum: Type.fromString('Fn<number<number,number>>'),
-      // square: Type.fromString('Fn<number<number>>'),
-
-      // typeof: Type.fromString('Fn<string<any>>'),
+      sum: Type.fromString('Fn<number<number,number>>'),
+      square: Type.fromString('Fn<number<number>>'),
+      typeof: Type.fromString('Fn<string<any>>'),
     });
   }
 

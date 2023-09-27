@@ -32,6 +32,9 @@ class Type {
    * Equals.
    */
   equals(other) {
+    if (other instanceof Type.Alias) {
+      return other.equals(this);
+    }
     return this.name === other.name;
   }
 
@@ -41,6 +44,10 @@ class Type {
   static fromString(typeStr) {
     if (this.hasOwnProperty(typeStr)) {
       return this[typeStr];
+    }
+
+    if (typeStr.includes('Fn<')) {
+      return Type.Function.fromString(typeStr);
     }
 
     throw `Unknown type: ${typeStr}`;
@@ -76,7 +83,91 @@ Type.any = new Type('any');
  * Function meta type.
  */
 Type.Function = class extends Type {
-  /* Implement here */
+  constructor({name = null, paramTypes, returnType}) {
+    super(name)
+    this.paramTypes = paramTypes;
+    this.returnType = returnType;
+    this.name = this.getName();
+  }
+
+  /**
+   * Returns name: Fn<returnType<p1, p2, ...>>
+   * 
+   **/
+  getName() {
+    if (this.name == null) {
+      const name = ['Fn<', this.returnType.getName()];
+      // params.
+      if (this.paramTypes.length !== 0) {
+        const params = [];
+        for (let i = 0; i < this.paramTypes.length; i++) {
+          params.push(this.paramTypes[i].getName());
+        }
+        name.push('<', params.join(','), '>');
+      }
+      name.push('>');
+    }
+    return this.name;
+  }
+
+  /**
+   * Equals.
+   */
+  equals(other) {
+    if (this.paramTypes.length !== other.paramTypes.length) {
+      return false;
+    }
+
+    for (let i = 0; i < this.paramTypes.length; i++) {
+      if (!this.paramTypes[i].equals(other.paramTypes[i])) {
+        return false
+      }
+    }
+
+    if (!this.returnType.equals(other.returnType)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static fromString(typeStr) {
+    if (Type.hasOwnProperty(typeStr)) {
+      return Type[typeStr];
+    }
+
+    // Function type with return and params
+    let matched = /^Fn<(\w+)<([a-z,\s]+)>>$/.exec(typeStr);
+
+    if (matched != null) {
+      const [_, returnTypeStr, paramsString] = matched;
+
+      // Param types
+      const paramTypes = paramsString
+        .split(/,\s*/g)
+        .map(param => Type.fromString(param));
+
+      return (Type[typeStr] = new Type.Function({
+        name: typeStr,
+        paramTypes,
+        returnType: Type.fromString(returnTypeStr)
+      }));
+    }
+
+    // function type with return type only
+    matched = /^Fn<(\w+)>$/.exec(typeStr);
+
+    if (matched != null) {
+      const [_, returnTypeStr] = matched;
+      return (Type[typeStr] = new Type.Function({
+        name: typeStr,
+        paramTypes: [],
+        returnType: Type.fromString(returnTypeStr)
+      }));
+    }
+
+    throw `Type.Function.fromString: Unknown type: ${typeStr}`;
+  }
 };
 
 /**
@@ -92,7 +183,11 @@ Type.Alias = class extends Type {
    * Equals.
    */
   equals(other) {
-    /* Implement here */
+    if (this.name === other.name) {
+      return true;
+    }
+
+    return this.parent.equals(other);
   }
 };
 
@@ -104,7 +199,34 @@ module.exports = Type;
  * Creates a new TypeEnvironment.
  */
 Type.Class = class extends Type {
-  /* Implement here */
+  constructor({name, superClass = Type.null}) {
+    super(name);
+    this.superClass = superClass;
+    this.env = new TypeEnvironment({}, superClass != Type.null ? superClass.env : null);
+  }
+
+  // Return field type
+  getField(name) {
+    return this.env.lookup(name);
+  }
+
+  // Equals override
+  equals(other) {
+    if (this === other) {
+      return true;
+    }
+
+    // Aliases:
+    if (other instanceof Type.Alias) {
+      return other.equals(this);
+    }
+
+    if (this.superClass != Type.null) {
+      return this.superClass.equals(other);
+    }
+
+    return false;
+  }
 };
 
 /**

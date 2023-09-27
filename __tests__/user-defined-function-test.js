@@ -16,7 +16,6 @@ module.exports = eva => {
       (* x x))
 
     (square 2)
-
   `,
   Type.number);
 
@@ -60,7 +59,7 @@ module.exports = eva => {
   Type.number);
 
 
-  // Recursive function:
+  // // Recursive function:
 
   test(eva,
   `
@@ -73,14 +72,4 @@ module.exports = eva => {
 
   `,
   Type.number);
-
-
-
-
-
-
-
-
-
-
 };
