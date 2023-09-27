@@ -32,29 +32,29 @@ module.exports = eva => {
   `,
   Type.number);
 
-  // test(eva,
-  // `
-  //   (class Point3D Point
-  //     (begin
+  test(eva,
+  `
+    (class Point3D Point
+      (begin
 
-  //       (var (z number) 0)
+        (var (z number) 0)
 
-  //       (def constructor ((self Point3D) (x number) (y number) (z number)) -> Point3D
-  //         (begin
-  //           ((prop (super Point3D) constructor) self x y)
-  //           (set (prop self z) z)
-  //           self))
+        (def constructor ((self Point3D) (x number) (y number) (z number)) -> Point3D
+          (begin
+            ((prop (super Point3D) constructor) self x y)
+            (set (prop self z) z)
+            self))
 
-  //       (def calc ((self Point3D)) -> number
-  //         (+ ((prop (super Point3D) calc) self)
-  //            (prop self z)))))
+        (def calc ((self Point3D)) -> number
+          (+ ((prop (super Point3D) calc) self)
+             (prop self z)))))
 
-  //   (var (p Point3D) (new Point3D 10 20 30))
+    (var (p Point3D) (new Point3D 10 20 30))
 
-  //   ((prop p calc) p)
+    ((prop p calc) p)
 
-  // `,
-  // Type.number);
+  `,
+  Type.number);
 
 
 

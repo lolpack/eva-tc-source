@@ -148,7 +148,15 @@ class EvaTC {
     // Super expressions: (super <ClassName>)
 
     if (exp[0] === 'super') {
-      /* Implement here */
+      const [_tag, className] = exp;
+
+      const classType = Type[className];
+
+      if (classType == null) {
+        throw `Unknown class ${name}.`;
+      }
+
+      return classType.superClass;
     }
 
     // --------------------------------------------
