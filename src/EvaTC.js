@@ -126,7 +126,22 @@ class EvaTC {
     // Class instantiation: (new <Class> <Arguments>...)
 
     if (exp[0] === 'new') {
-      /* Implement here */
+      const [_tag, className, ...argValues] = exp;
+
+      const classType = Type[className];
+
+      if (classType == null) {
+        throw `Unknown class ${name}.`;
+      }
+
+      const argTypes = argValues.map(arg => this.tc(arg, env));
+
+      return this._checkFunctionCall(
+        classType.getField('constructor'),
+        [classType, ...argTypes],
+        env,
+        exp
+      );
     }
 
     // --------------------------------------------
@@ -140,7 +155,11 @@ class EvaTC {
     // Property access: (prop <instance> <name>)
 
     if (exp[0] === 'prop') {
-      /* Implement here */
+      const [_tag, instance, name] = exp;
+
+      const instanceType = this.tc(instance, env);
+
+      return instanceType.getField(name);
     }
 
     // --------------------------------------------
@@ -181,6 +200,17 @@ class EvaTC {
 
     if (exp[0] === 'set') {
       const [_, ref, value] = exp;
+
+      // 1. Assignment to a property: (set (prop <instance> <propName>) <value>)
+      if (ref[0] === 'prop') {
+        const [_tag, instance, propName] = ref;
+        const instanceType = this.tc(instance, env);
+
+        const valueType = this.tc(value, env);
+        const propType = instanceType.getField(propName);
+
+        return this._expect(valueType, propType, value, exp);
+      }
 
       // The type of the new value should match to the
       // previous type when the variable was defined

@@ -23,14 +23,12 @@ module.exports = eva => {
             // (set (prop self y) y)
             self))
 
-        (def calc ((self Point)) -> number 1)))
-    //       (+ (prop self x) (prop self y)))))
+        (def calc ((self Point)) -> number
+          (+ (prop self x) (prop self y)))))
 
-    // (var (p Point) (new Point 10 20))
+    (var (p Point) (new Point 10 20))
 
-    // ((prop p calc) p)
-    1
-
+    ((prop p calc) p)
   `,
   Type.number);
 
