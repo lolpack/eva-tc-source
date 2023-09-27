@@ -77,21 +77,49 @@ class EvaTC {
     // Boolean binary:
 
     if (this._isBooleanBinary(exp)) {
-      return this._booleanBinary(exp);
+      return this._booleanBinary(exp, env);
     }
 
     // --------------------------------------------
     // Type declaration/alias: (type <name> <base>)
 
     if (exp[0] === 'type') {
-      /* Implement here */
+      const [_tag, name, base] = exp;
+
+      // Type alias
+      if (Type.hasOwnProperty(name)) {
+        throw `Type ${name} is already defined ${Type[name]}`;
+      }
+
+      if (!Type.hasOwnProperty(base)) {
+        throw `Type ${base} is not defined.`
+      }
+
+      return (Type[name] = new Type.Alias({
+        name,
+        parent: Type[base],
+      }));
     }
 
     // --------------------------------------------
     // Class declaration: (class <Name> <Super> <Body>)
 
     if (exp[0] === 'class') {
-      /* Implement here */
+      const [_tag, name, superClassName, body] = exp;
+
+      // Resolve super class
+      const superClass = Type[superClassName];
+
+      // New class (type)
+      const classType = new Type.Class({name, superClass});
+
+      // Class is accessible by name;
+      Type[name] = env.define(name, classType);
+
+      // Body is evaluated in the class environment.
+      this._tcBody(body, classType.env);
+
+      return classType;
     }
 
     // --------------------------------------------
@@ -219,7 +247,6 @@ class EvaTC {
 
       // Extend environment with function name before evaluating body
       // to support recursive function
-
       const paramTypes = params.map(([name, typeStr]) => 
         Type.fromString(typeStr)
       );
@@ -389,7 +416,7 @@ class EvaTC {
    * Checks function body.
    */
   _tcFunction(params, returnTypeStr, body, env) {
-    const returnType = Type.Function.fromString(returnTypeStr);
+    const returnType = Type.fromString(returnTypeStr);
 
     // Parameters environment and types:
     const paramsRecord = {};
@@ -447,9 +474,9 @@ class EvaTC {
     return new TypeEnvironment({
       VERSION: Type.string,
 
-      sum: Type.Function.fromString('Fn<number<number,number>>'),
-      square: Type.Function.fromString('Fn<number<number>>'),
-      typeof: Type.Function.fromString('Fn<string<any>>'),
+      sum: Type.fromString('Fn<number<number,number>>'),
+      square: Type.fromString('Fn<number<number>>'),
+      typeof: Type.fromString('Fn<string<any>>'),
     });
   }
 

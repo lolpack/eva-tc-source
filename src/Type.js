@@ -32,6 +32,9 @@ class Type {
    * Equals.
    */
   equals(other) {
+    if (other instanceof Type.Alias) {
+      return other.equals(this);
+    }
     return this.name === other.name;
   }
 
@@ -41,6 +44,10 @@ class Type {
   static fromString(typeStr) {
     if (this.hasOwnProperty(typeStr)) {
       return this[typeStr];
+    }
+
+    if (typeStr.includes('Fn<')) {
+      return Type.Function.fromString(typeStr);
     }
 
     throw `Unknown type: ${typeStr}`;
@@ -176,7 +183,11 @@ Type.Alias = class extends Type {
    * Equals.
    */
   equals(other) {
-    /* Implement here */
+    if (this.name === other.name) {
+      return true;
+    }
+
+    return this.parent.equals(other);
   }
 };
 
@@ -188,7 +199,34 @@ module.exports = Type;
  * Creates a new TypeEnvironment.
  */
 Type.Class = class extends Type {
-  /* Implement here */
+  constructor({name, superClass = Type.null}) {
+    super(name);
+    this.superClass = superClass;
+    this.env = new TypeEnvironment({}, superClass != Type.null ? superClass.env : null);
+  }
+
+  // Return field type
+  getField(name) {
+    return this.env.lookup(name);
+  }
+
+  // Equals override
+  equals(other) {
+    if (this === other) {
+      return true;
+    }
+
+    // Aliases:
+    if (other instanceof Type.Alias) {
+      return other.equals(this);
+    }
+
+    if (this.superClass != Type.null) {
+      return this.superClass.equals(other);
+    }
+
+    return false;
+  }
 };
 
 /**
