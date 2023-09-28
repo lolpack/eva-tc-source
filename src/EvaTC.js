@@ -452,6 +452,9 @@ class EvaTC {
 
     // Check if argument types match the parameter types:
     argTypes.forEach((argType, index) => {
+      if (fn.paramTypes[index] === Type.any) {
+        return;
+      }
       this._expect(argType, fn.paramTypes[index], argTypes[index], exp);
     });
 
