@@ -86,19 +86,27 @@ class EvaTC {
     if (exp[0] === 'type') {
       const [_tag, name, base] = exp;
 
-      // Type alias
-      if (Type.hasOwnProperty(name)) {
-        throw `Type ${name} is already defined ${Type[name]}`;
-      }
+      // Union type: (or number string)
 
-      if (!Type.hasOwnProperty(base)) {
-        throw `Type ${base} is not defined.`
-      }
+      if (base[0] === 'or') {
+        const options = base.slice(1);
+        const optionTypes = options.map(option => Type.fromString(option));
+        return (Type[name] = new Type.Union({name, optionTypes}));
+      } else {
+        // Type alias
+        if (Type.hasOwnProperty(name)) {
+          throw `Type ${name} is already defined ${Type[name]}`;
+        }
 
-      return (Type[name] = new Type.Alias({
-        name,
-        parent: Type[base],
-      }));
+        if (!Type.hasOwnProperty(base)) {
+          throw `Type ${base} is not defined.`
+        }
+
+        return (Type[name] = new Type.Alias({
+          name,
+          parent: Type[base],
+        }));
+      }
     }
 
     // --------------------------------------------

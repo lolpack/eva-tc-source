@@ -35,6 +35,11 @@ class Type {
     if (other instanceof Type.Alias) {
       return other.equals(this);
     }
+
+    if (other instanceof Type.Union) {
+      return other.equals(this);
+    }
+    
     return this.name === other.name;
   }
 
@@ -233,7 +238,48 @@ Type.Class = class extends Type {
  * Union type: (or string number)
  */
 Type.Union = class extends Type {
-  /* Implement here */
+  constructor({name, optionTypes}) {
+    super(name);
+    this.optionTypes = optionTypes;
+  }
+
+  /**
+   * This union includes all types
+   */
+  includesAll(types) {
+    if (types.length !== this.optionTypes.length) {
+      return false;
+    }
+    for (const type_ of types) {
+      if (!this.equals(type_)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Equals.
+  */ 
+  equals(other) {
+    if (this === other) {
+      return true;
+    }
+
+    // Aliases:
+    if (other instanceof Type.Alias) {
+      return other.equals(this);
+    }
+
+    // Other union:
+    if (other instanceof Type.Union) {
+      return this.includesAll(other.optionTypes);
+    }
+
+    // Anything else:
+    return this.optionTypes.some(t => t.equals(other));
+  }
 };
 
 /**
@@ -245,7 +291,6 @@ Type.Union = class extends Type {
 Type.GenericFunction = class extends Type {
   /* Implement here */
 };
-
 
 
 

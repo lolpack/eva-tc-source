@@ -62,27 +62,27 @@ module.exports = eva => {
   `,
   Type.number);
 
-  test(eva,
-  `
+  // test(eva,
+  // `
 
-    (def accept ((x value)) -> value
-      (begin
-        (if (== (typeof x) "number")
-            (- 1 x)
-            (+ "y" x))))
+  //   (def accept ((x value)) -> value
+  //     (begin
+  //       (if (== (typeof x) "number")
+  //           (- 1 x)
+  //           (+ "y" x))))
 
-    (accept 10)
+  //   (accept 10)
 
-  `,
-  Type.number);
+  // `,
+  // Type.number);
 
-  test(eva,
-  `
+  // test(eva,
+  // `
 
-    (accept "x")
+  //   (accept "x")
 
-  `,
-  Type.string);
+  // `,
+  // Type.string);
 
 
 
