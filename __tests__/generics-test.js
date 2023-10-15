@@ -17,34 +17,34 @@ module.exports = eva => {
 
   `);
 
-  // test(eva,
-  // `
+  test(eva,
+  `
 
-  //   (combine <number> 2 3)
+    (combine <number> 2 3)
 
-  // `,
-  // Type.number);
+  `,
+  Type.number);
 
-  // test(eva,
-  // `
+  test(eva,
+  `
 
-  //   (combine <string> "Hello, " "world!")
+    (combine <string> "Hello, " "world!")
 
-  // `,
-  // Type.string);
+  `,
+  Type.string);
 
-  // test(eva,
-  // `
-  //   ((lambda <K> ((x K)) -> K (+ x x)) <number> 2)
+  test(eva,
+  `
+    ((lambda <K> ((x K)) -> K (+ x x)) <number> 2)
 
-  // `,
-  // Type.number);
+  `,
+  Type.number);
 
-  // test(eva,
-  // `
-  //   ((lambda <K> ((x K)) -> K (+ x x)) <string> "hello")
+  test(eva,
+  `
+    ((lambda <K> ((x K)) -> K (+ x x)) <string> "hello")
 
-  // `,
-  // Type.string);
+  `,
+  Type.string);
 
 };

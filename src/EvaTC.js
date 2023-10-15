@@ -351,12 +351,48 @@ class EvaTC {
 
     if (Array.isArray(exp)) {
       const fn = this.tc(exp[0], env);
-      const argValues = exp.slice(1);
+
+      // Simple Function calls:
+      let actualFn = fn;
+      let argValues = exp.slice(1);
+
+      // Generic function calls
+      if (fn instanceof Type.GenericFunction) {
+        // Actual (instantiated) types:
+        const actualTypes = this._extractActulCallTypes(exp);
+
+        // Map the generic types to the actual types:
+        const genericTypesMap = this._getGenericTypesMap(
+          fn.genericTypes,
+          actualTypes,
+        );
+
+        // Bind Parameters and return types:
+        const [boundParams, boundReturnType] = this._bindFunctionTypes(
+          fn.params,
+          fn.returnType,
+          genericTypesMap,
+        );
+
+        // Check function body with the bound parameter types:
+        // This creates an actual function type.
+        // Notice that we pass env as fn.env, a closure 
+
+        actualFn = this._tcFunction(
+          boundParams,
+          boundReturnType,
+          fn.body,
+          fn.env,
+        );
+
+        // IN generic function calls paramsters passed from index 2
+        argValues = exp.slice(2);
+      }
 
       // Passed arguments
       const argTypes = argValues.map(arg => this.tc(arg, env));
 
-      return this._checkFunctionCall(fn, argTypes, env, exp);
+      return this._checkFunctionCall(actualFn, argTypes, env, exp);
     }
 
     throw `Unknown type for expression ${exp}.`;
@@ -377,7 +413,32 @@ class EvaTC {
    * Binds generic parameters and return type to actual types.
    */
   _bindFunctionTypes(params, returnType, genericTypesMap) {
-    /* Implement here */
+    const actualParams = [];
+
+    // 1. Bind parameter types
+
+    for (let i = 0; i < params.length; i++) {
+      const [paramName, paramType] = params[i];
+
+      let actualParamType = paramType;
+
+      // Generic Type
+      if (genericTypesMap.has(paramType)) {
+        actualParamType = genericTypesMap.get(paramType);
+      }
+
+      actualParams.push([paramName, actualParamType]);
+    }
+
+    // 2. Bind return type:
+
+    let actualReturnType = returnType;
+
+    if (genericTypesMap.has(returnType)) {
+      actualReturnType = genericTypesMap.get(returnType);
+    }
+
+    return [actualParams, actualReturnType];
   }
 
   /**
