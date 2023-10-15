@@ -306,34 +306,43 @@ class EvaTC {
     // Syntactic sugar for: (var square (lambda ((x number)) -> number (* x x)))
 
     if (exp[0] === 'def') {
-      const [_tag, name, params, _retDel, returnTypeStr, body] = exp;
+      // Transpile to a variable declaration:
 
-      // Extend environment with function name before evaluating body
-      // to support recursive function
-      const paramTypes = params.map(([name, typeStr]) => 
-        Type.fromString(typeStr)
-      );
+      const varExp = this._transformDefToVarLambda(exp);
 
-      env.define(
-        name,
-        new Type.Function({
-          paramTypes,
-          returnType: Type.fromString(returnTypeStr)
-        }),
-      );
+      if (!this._isGenericDefFunction(exp)) {
+        const name = exp[1];
+        const params = exp[2];
+        const returnTypeStr = exp[4];
 
-      // Validate body
-      return this._tcFunction(params, returnTypeStr, body, env);
+        // Extend environment with function name before evaluating body
+        // to support recursive function
+        const paramTypes = params.map(([name, typeStr]) => 
+          Type.fromString(typeStr)
+        );
+
+        env.define(
+          name,
+          new Type.Function({
+            paramTypes,
+            returnType: Type.fromString(returnTypeStr)
+          }),
+        );
+      }
+
+      // Delegate to lambda
+      return this.tc(varExp, env);
     }
 
-    // MUST COME BEFORE FUNCTION CALL BELOW: TODO figure out more
-    // Elegant solution
-    // --------------------------------------------
     // Lambda function: (lambda ((x number)) -> number (* x x))
-
     if (exp[0] === 'lambda') {
-      const [_tag, params, _retDel, returnTypeStr, body] = exp;
-      return this._tcFunction(params, returnTypeStr, body, env);
+      // Generic
+      if (this._isGenericLambdaFunction(exp)) {
+        return this._createGenericFunctionType(exp, env);
+      }
+
+      // Simple
+      return this._createSimpleFunctionType(exp, env);
     }
 
     // ------------------------------------------
@@ -392,7 +401,8 @@ class EvaTC {
    * Such functions are type-checked during declaration time.
    */
   _createSimpleFunctionType(exp, env) {
-    /* Implement here */
+    const [_tag, params, _retDel, returnTypeStr, body] = exp;
+    return this._tcFunction(params, returnTypeStr, body, env);
   }
 
   /**
@@ -403,7 +413,15 @@ class EvaTC {
    * generic parameters are bound.
    */
   _createGenericFunctionType(exp, env) {
-    /* Implement here */
+    const [_tag, genericTypes, params, _retDel, returnType, body] = exp;
+
+    return new Type.GenericFunction({
+      genericTypesStr: genericTypes.slice(1, -1),
+      params,
+      body,
+      returnType,
+      env, // Closure
+    });
   }
 
   /**
@@ -412,7 +430,7 @@ class EvaTC {
    * (lambda <K> ((x K)) -> K (+ x x))
    */
   _isGenericLambdaFunction(exp) {
-    /* Implement here */
+    return exp.length === 6 && /^<[^>]+>$/.test(exp[1]);
   }
 
   /**
@@ -428,7 +446,16 @@ class EvaTC {
    * Transforms def to var-lambda.
    */
   _transformDefToVarLambda(exp) {
-    /* Implement here */
+    // Generic
+    if (this._isGenericDefFunction(exp)) {
+      const [_tag, name, genericTypesStr, params, _retDel, returnTypeStr, body] = exp;
+
+      return ['var', name, ['lambda', genericTypesStr, params, _retDel, returnTypeStr, body]];
+    }
+
+    // Simple
+    const [_tag, name, params, _retDel, returnTypeStr, body] = exp;
+    return ['var', name, ['lambda', params, _retDel, returnTypeStr, body]];
   }
 
   /**

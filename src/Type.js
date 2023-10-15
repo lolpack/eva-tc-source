@@ -289,7 +289,14 @@ Type.Union = class extends Type {
  * when a function is called.
  */
 Type.GenericFunction = class extends Type {
-  /* Implement here */
+  constructor({name = null, genericTypesStr, params, returnType, body, env}) {
+    super(`${name  || 'lambda'} <${genericTypesStr}>`);
+    this.genericTypes = genericTypesStr.split(',');
+    this.params = params;
+    this.returnType = returnType;
+    this.body = body;
+    this.env = env;
+  }
 };
 
 
