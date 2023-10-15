@@ -19,7 +19,7 @@ const tests = [
   require('./alias-test.js'),
   require('./class-test.js'),
   require('./union-test.js'),
-  // require('./generics-test.js'),
+  require('./generics-test.js'),
 ];
 
 
