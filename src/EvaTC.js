@@ -263,7 +263,24 @@ class EvaTC {
       const t1 = this.tc(condition, env);
       this._expect(t1, Type.boolean, condition, exp);
 
-      const t2 = this.tc(consequent, env);
+      // Initially, environment used to tc consequent part
+      // is the same as the main env, however can be updated
+      // for the union type with type casting:
+      let consequentEnv = env;
+
+      // Check if the condition if a type casting rule.
+      // This is used with union types to make a type concrete:
+      if (this._isTypeCastCondition(condition)) {
+        const [name, specificType] = this._getSpecifiedType(condition);
+
+        // Update environment with the concrete type for this name:
+        consequentEnv = new TypeEnvironment(
+          {[name]: Type.fromString(specificType)},
+          env
+          );
+      }
+
+      const t2 = this.tc(consequent, consequentEnv);
       const t3 = this.tc(alternate, env);
 
       //Same type for both branches
@@ -436,7 +453,10 @@ class EvaTC {
    *
    */
   _getSpecifiedType(condition) {
-    /* Implement here */
+    const [_op, [_typeof, name], specificType] = condition;
+
+    // Return name and the new type (stripping quotes).
+    return [name, specificType.slice(1, -1)];
   }
 
   /**
@@ -526,6 +546,7 @@ class EvaTC {
       sum: Type.fromString('Fn<number<number,number>>'),
       square: Type.fromString('Fn<number<number>>'),
       typeof: Type.fromString('Fn<string<any>>'),
+
     });
   }
 
@@ -598,6 +619,18 @@ class EvaTC {
    * Throws if operator type doesn't expect the operand.
    */
   _expectOperatorType(type_, allowedTypes, exp) {
+    // For union type, _all_ sub-types should support this operation:
+    if (type_ instanceof Type.Union) {
+      if (type_.includesAll(allowedTypes)) {
+        return;
+      }
+    } else {
+      // Other types:
+      if (allowedTypes.some(t => t.equals(type_))) {
+        return;
+      }
+    }
+
     if (!allowedTypes.some(t => t.equals(type_))) {
       throw `\nUnexpected type: ${type} in ${exp}, allowed: ${allowedTypes}`;
     }
